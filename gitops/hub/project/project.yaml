@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: keycloak-active-active
+spec:
+  description: Community Keycloak on cluster-a and cluster-b
+  sourceRepos:
+    - https://github.com/arencloud/keycloak-active-active-gitops.git
+  destinations:
+    - server: https://api.cluster-a.example.com:6443
+      namespace: keycloak
+    - server: https://api.cluster-b.example.com:6443
+      namespace: keycloak
+  # OLM owns cluster-wide CRDs and operator RBAC, not these Applications.
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: operators.coreos.com
+      kind: OperatorGroup
+    - group: operators.coreos.com
+      kind: Subscription
+    - group: k8s.keycloak.org
+      kind: Keycloak
+    - group: cert-manager.io
+      kind: Certificate
+    - group: external-secrets.io
+      kind: ExternalSecret
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ConfigMap
+    - group: policy
+      kind: PodDisruptionBudget
+    - group: networking.k8s.io
+      kind: NetworkPolicy
+  orphanedResources:
+    warn: false

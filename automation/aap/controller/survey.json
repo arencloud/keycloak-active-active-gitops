@@ -1,0 +1,73 @@
+{
+  "name": "Active/Active Keycloak deployment",
+  "description": "Choose the ACM pair, namespace, public endpoint, Vault database secret and database TLS mode. Shared infrastructure is discovered.",
+  "spec": [
+    {
+      "question_name": "Managed cluster A",
+      "question_description": "Choose two distinct Ready ACM managed clusters. Inventory is refreshed during template registration and revalidated on every launch.",
+      "variable": "kc_cluster_a",
+      "type": "multiplechoice",
+      "choices": "cluster-a\ncluster-b",
+      "default": "",
+      "required": true
+    },
+    {
+      "question_name": "Managed cluster B",
+      "question_description": "Choose two distinct Ready ACM managed clusters. Inventory is refreshed during template registration and revalidated on every launch.",
+      "variable": "kc_cluster_b",
+      "type": "multiplechoice",
+      "choices": "cluster-a\ncluster-b",
+      "default": "",
+      "required": true
+    },
+    {
+      "question_name": "Public FQDN",
+      "question_description": "Hostname only, without https:// or a path. Must be permitted by the existing Vault issuer and belong to a Cloudflare zone accessible to the shared token.",
+      "variable": "kc_public_host",
+      "type": "text",
+      "min": 3,
+      "max": 253,
+      "default": "",
+      "required": true
+    },
+    {
+      "question_name": "Public IPv6 VIP",
+      "question_description": "Public IPv6 address for the selected FQDN. The workflow derives the OPNsense interface and creates an IP alias if absent.",
+      "variable": "kc_public_vip",
+      "type": "text",
+      "min": 2,
+      "max": 39,
+      "default": "",
+      "required": true
+    },
+    {
+      "question_name": "Keycloak namespace",
+      "question_description": "Dedicated namespace, identical on both selected clusters. Use a different namespace for each independent deployment; existing namespaces must be owned by this workflow.",
+      "variable": "kc_namespace",
+      "type": "text",
+      "min": 1,
+      "max": 63,
+      "default": "keycloak",
+      "required": true
+    },
+    {
+      "question_name": "Vault database secret path",
+      "question_description": "Path relative to KV v2 mount kv, containing host, database, username and password (port 5432). Each independent deployment must use a dedicated database. Do not enter credentials.",
+      "variable": "kc_database_path",
+      "type": "text",
+      "min": 1,
+      "max": 512,
+      "default": "global/keycloak/active-active/postgresql",
+      "required": true
+    },
+    {
+      "question_name": "PostgreSQL TLS",
+      "question_description": "enabled: require TLS with trusted certificate and matching hostname; fail if unavailable. disabled: use a non-TLS database connection. Checked after ESO resolves the secret, before starting Keycloak. Public HTTPS is unchanged.",
+      "variable": "kc_database_tls",
+      "type": "multiplechoice",
+      "choices": "enabled\ndisabled",
+      "default": "enabled",
+      "required": true
+    }
+  ]
+}

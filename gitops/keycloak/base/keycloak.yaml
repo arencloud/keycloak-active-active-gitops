@@ -1,0 +1,57 @@
+apiVersion: k8s.keycloak.org/v2beta1
+kind: Keycloak
+metadata:
+  name: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  instances: 2
+  image: quay.io/keycloak/keycloak:26.8.1
+  startOptimized: false
+  env:
+    - name: JAVA_OPTS_APPEND
+      value: "-Djava.net.preferIPv4Stack=false -Djava.net.preferIPv6Addresses=true"
+  features:
+    enabled: [stateless]
+  hostname:
+    hostname: https://REPLACE_ME_PUBLIC_FQDN
+  ingress:
+    enabled: false
+  http:
+    httpEnabled: false
+    tlsSecret: keycloak-tls
+  proxy:
+    headers: xforwarded
+  bootstrapAdmin:
+    user:
+      secret: keycloak-bootstrap
+  db:
+    vendor: postgres
+    port: 5432
+    poolInitialSize: 10
+    poolMinSize: 10
+    poolMaxSize: 10
+    usernameSecret: {name: keycloak-db, key: username}
+    passwordSecret: {name: keycloak-db, key: password}
+  truststores:
+    db:
+      configMap:
+        name: keycloak-db-rootcert
+  additionalOptions:
+    - name: cache-embedded-cluster-name
+      value: REPLACE_ME_CLUSTER_NAME
+    - name: db-url-host
+      secret: {name: keycloak-db, key: host}
+    - name: db-url-database
+      secret: {name: keycloak-db, key: database}
+    - name: db-tls-mode
+      value: verify-server
+    - name: proxy-trusted-addresses
+      value: REPLACE_ME_OBSERVED_PROXY_IPV6_CIDRS
+    - name: metrics-enabled
+      value: "true"
+    - name: log-console-output
+      value: json
+  resources:
+    requests: {cpu: "1", memory: 2Gi}
+    limits: {cpu: "2", memory: 3Gi}

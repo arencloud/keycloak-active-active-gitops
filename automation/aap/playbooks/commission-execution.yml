@@ -1,0 +1,26 @@
+---
+- name: Validate the dedicated Keycloak execution group
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Check recovery persistence, tools and network access
+      ansible.builtin.command:
+        argv:
+          - python3
+          - '{{ playbook_dir }}/../../../scripts/commission_execution.py'
+      environment:
+        KEYCLOAK_REPORT_DIR: /runner/keycloak-recovery
+        COMMISSION_JOB_ID: '{{ awx_job_id | default(tower_job_id | default("manual")) }}'
+      register: commissioning
+      changed_when: false
+      failed_when: false
+
+    - name: Show commissioning result
+      ansible.builtin.debug:
+        msg: '{{ commissioning.stdout_lines }}'
+
+    - name: Require a usable execution group
+      ansible.builtin.assert:
+        that: commissioning.rc == 0
+        fail_msg: 'Execution commissioning failed: {{ commissioning.stdout }}'

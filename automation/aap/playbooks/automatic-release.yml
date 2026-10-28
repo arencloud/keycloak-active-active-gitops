@@ -1,0 +1,80 @@
+---
+- name: Discover and deploy Keycloak from the selected ACM pair
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    automatic_mode: plan
+    repository_root: '{{ playbook_dir }}/../../..'
+  tasks:
+    - name: Validate the seven self-service inputs
+      ansible.builtin.assert:
+        that:
+          - automatic_mode in ['discover', 'plan', 'deploy']
+          - kc_cluster_a is match('^[a-z0-9][a-z0-9.-]*$')
+          - kc_cluster_b is match('^[a-z0-9][a-z0-9.-]*$')
+          - kc_cluster_a != kc_cluster_b
+          - kc_public_vip | length > 1
+          - kc_public_host | length > 2
+          - kc_namespace | length > 0
+          - kc_database_path | length > 0
+          - kc_database_tls | default('enabled') in ['enabled', 'disabled']
+
+    - name: Identify the hub account used for discovery
+      ansible.builtin.command:
+        argv: [oc, whoami, --request-timeout=30s]
+      register: hub_identity
+      changed_when: false
+      no_log: true
+
+    - name: Show the authenticated hub identity
+      ansible.builtin.debug:
+        msg: 'Hub identity: {{ hub_identity.stdout }}'
+
+    - name: Run discovery or the Git-gated deployment from the AAP project commit
+      ansible.builtin.command:
+        argv:
+          - python3
+          - '{{ repository_root }}/scripts/automatic.py'
+          - --namespace
+          - '{{ kc_namespace }}'
+          - --mode
+          - '{{ automatic_mode }}'
+          - --cluster-a
+          - '{{ kc_cluster_a }}'
+          - --cluster-b
+          - '{{ kc_cluster_b }}'
+          - --database-path
+          - '{{ kc_database_path }}'
+          - --database-tls
+          - "{{ kc_database_tls | default('enabled') }}"
+          - --public-host
+          - '{{ kc_public_host }}'
+          - --public-vip
+          - '{{ kc_public_vip }}'
+          - --request-id
+          - "AAP-{{ awx_workflow_job_id | default(awx_job_id | default(tower_job_id | default('manual'))) }}"
+      environment:
+        KEYCLOAK_EXPECTED_REVISION: "{{ keycloak_workflow_revision | default('') }}"
+        KEYCLOAK_REPORT_DIR: "{{ keycloak_report_directory | default(lookup('ansible.builtin.env', 'KEYCLOAK_REPORT_DIR'), true) }}"
+      register: automatic_result
+      changed_when: automatic_mode == 'deploy' and automatic_result.rc == 0
+      failed_when: false
+
+    - name: Publish sanitized discovery and execution results
+      ansible.builtin.debug:
+        msg: '{{ automatic_result.stdout_lines }}'
+
+    - name: Require successful execution
+      ansible.builtin.assert:
+        that: automatic_result.rc == 0
+        fail_msg: >-
+          Discovery or execution failed (exit {{ automatic_result.rc }}).
+          {{ automatic_result.stdout | default('No runner output; inspect the execution environment.', true) }}
+
+    - name: Carry the discovered revision to subsequent workflow stages
+      ansible.builtin.set_stats:
+        data:
+          keycloak_workflow_revision: '{{ (automatic_result.stdout | from_json).revision }}'
+        per_host: false
+      when: automatic_mode in ['discover', 'plan']

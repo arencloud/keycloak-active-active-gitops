@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1136" viewBox="0 0 1280 1136" role="img" aria-labelledby="title desc">
+<title id="title">Active/active Keycloak: client traffic and deployment architecture</title><desc id="desc">Target architecture. Clients resolve a DNS-only Cloudflare AAAA record via their resolver and connect over IPv6 HTTPS to the OPNsense VIP. HAProxy verifies TLS to either cluster MetalLB service and Keycloak. Both sites share PostgreSQL. A separate management lane shows AAP, ACM, Argo CD and Vault integrations. Fictional example names and documentation-only IP addresses must be replaced with real survey values.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#2563eb"/></marker><marker id="muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#7c6aa6"/></marker></defs><style>text{font-family:Arial,Helvetica,sans-serif;fill:#182b49}.heading{font-weight:700;font-size:23px}.body{font-size:18px;fill:#475a73}.small{font-size:16px;fill:#475a73}.eyebrow{font-size:14px;letter-spacing:1.7px;font-weight:700;fill:#61748d}.white{fill:white}.line{fill:none;stroke:#2563eb;stroke-width:2.5}.control{fill:none;stroke:#7c6aa6;stroke-width:2;stroke-dasharray:6 5}</style>
+<rect width="1280" height="1136" fill="#f3f6fb"/>
+<rect x="0" y="0" width="1280" height="118" rx="0" fill="#142744" stroke="#142744" stroke-width="1.5"/>
+<text x="40" y="49" class="heading white" text-anchor="start">ONE PUBLIC ENDPOINT · TWO ACTIVE SITES</text>
+<text x="40" y="83" class="body white" text-anchor="start">Keycloak 26.8.1  /  OpenShift 4.22.x  /  IPv6 runtime traffic</text>
+<text x="1238" y="47" class="eyebrow white" text-anchor="end">TARGET ARCHITECTURE</text>
+<text x="40" y="149" class="body" text-anchor="start">CLIENT ACCESS</text>
+<text x="960" y="149" class="eyebrow" text-anchor="start">DEPLOYMENT &amp; TRUST</text>
+<rect x="40" y="170" width="420" height="116" rx="16" fill="white" stroke="#d6e1ef" stroke-width="1.5"/>
+<text x="64" y="206" class="heading" text-anchor="start">Browser / application</text>
+<text x="64" y="236" class="body" text-anchor="start">auth.example.com</text>
+<text x="64" y="262" class="small" text-anchor="start">IPv6 connectivity + trusted Vault CA</text>
+<rect x="500" y="170" width="420" height="116" rx="16" fill="#f4f0ff" stroke="#d8cdf0" stroke-width="1.5"/>
+<text x="524" y="206" class="heading" text-anchor="start">01 · Resolve with Cloudflare DNS</text>
+<text x="524" y="236" class="body" text-anchor="start">DNS-only AAAA → public IPv6 VIP</text>
+<text x="524" y="262" class="small" text-anchor="start">Through the client’s recursive resolver</text>
+<path d="M460 230 H500" class="control" marker-end="url(#muted)" marker-start="url(#muted)"/>
+<path d="M250 286 V326 H480 V364" class="line" marker-end="url(#arrow)"/>
+<text x="492" y="330" class="small" text-anchor="start">HTTPS · IPv6 :443</text>
+<rect x="160" y="364" width="640" height="146" rx="16" fill="#e9f2ff" stroke="#8bb7ef" stroke-width="1.5"/>
+<text x="480" y="400" class="heading" text-anchor="middle">02 · OPNsense / HAProxy</text>
+<text x="480" y="430" class="body" text-anchor="middle">Public VIP  [PUBLIC_IPV6_VIP]:443</text>
+<text x="480" y="458" class="body" text-anchor="middle">TLS termination · round-robin across healthy sites</text>
+<text x="480" y="486" class="small" text-anchor="middle">Backend check: /lb-check · verified TLS + hostname</text>
+<path d="M360 510 V540 H250 V594" class="line" marker-end="url(#arrow)"/>
+<path d="M600 510 V540 H710 V594" class="line" marker-end="url(#arrow)"/>
+<rect x="287" y="551" width="386" height="29" rx="4" fill="#f3f6fb" stroke="#f3f6fb" stroke-width="1.5"/>
+<text x="480" y="572" class="small" text-anchor="middle">03 · Backend HTTPS :443 → :8443</text>
+<rect x="40" y="594" width="420" height="246" rx="16" fill="#edf4fb" stroke="#b9cde5" stroke-width="1.5"/>
+<text x="64" y="630" class="heading" text-anchor="start">cluster-a</text>
+<text x="436" y="630" class="eyebrow" text-anchor="end">OPENSHIFT</text>
+<rect x="60" y="650" width="380" height="66" rx="16" fill="white" stroke="#d6e1ef" stroke-width="1.5"/>
+<text x="250" y="679" class="body" text-anchor="middle">MetalLB · IPv6 LoadBalancer</text>
+<text x="250" y="702" class="small" text-anchor="middle">Address allocated from the site’s pool</text>
+<path d="M250 716 V744" class="line" marker-end="url(#arrow)"/>
+<rect x="60" y="744" width="380" height="74" rx="16" fill="#e7f6f1" stroke="#94c9b7" stroke-width="1.5"/>
+<text x="250" y="774" class="heading" text-anchor="middle">Keycloak · stateless</text>
+<text x="250" y="801" class="small" text-anchor="middle">2 replicas · selected namespace on both sites</text>
+<rect x="500" y="594" width="420" height="246" rx="16" fill="#edf4fb" stroke="#b9cde5" stroke-width="1.5"/>
+<text x="524" y="630" class="heading" text-anchor="start">cluster-b</text>
+<text x="896" y="630" class="eyebrow" text-anchor="end">OPENSHIFT</text>
+<rect x="520" y="650" width="380" height="66" rx="16" fill="white" stroke="#d6e1ef" stroke-width="1.5"/>
+<text x="710" y="679" class="body" text-anchor="middle">MetalLB · IPv6 LoadBalancer</text>
+<text x="710" y="702" class="small" text-anchor="middle">Address allocated from the site’s pool</text>
+<path d="M710 716 V744" class="line" marker-end="url(#arrow)"/>
+<rect x="520" y="744" width="380" height="74" rx="16" fill="#e7f6f1" stroke="#94c9b7" stroke-width="1.5"/>
+<text x="710" y="774" class="heading" text-anchor="middle">Keycloak · stateless</text>
+<text x="710" y="801" class="small" text-anchor="middle">2 replicas · selected namespace on both sites</text>
+<path d="M250 840 V874 H370 V916" class="line" marker-end="url(#arrow)"/>
+<path d="M710 840 V874 H590 V916" class="line" marker-end="url(#arrow)"/>
+<text x="480" y="898" class="small" text-anchor="middle">IPv6 · TCP 5432</text>
+<rect x="160" y="916" width="640" height="108" rx="16" fill="#fff5e7" stroke="#e8c691" stroke-width="1.5"/>
+<text x="480" y="951" class="heading" text-anchor="middle">04 · Shared PostgreSQL database</text>
+<text x="480" y="979" class="body" text-anchor="middle">Persistent sessions + cross-site cache invalidation</text>
+<text x="480" y="1006" class="small" text-anchor="middle">Same database / schema · database TLS selected in survey</text>
+<rect x="960" y="170" width="280" height="854" rx="16" fill="#eeedf7" stroke="#d8d5e8" stroke-width="1.5"/>
+<rect x="978" y="192" width="244" height="150" rx="16" fill="white" stroke="#d6e1ef" stroke-width="1.5"/>
+<text x="1000" y="226" class="heading" text-anchor="start">AAP self-service</text>
+<text x="1000" y="258" class="body" text-anchor="start">Seven survey inputs</text>
+<text x="1000" y="286" class="small" text-anchor="start">Discover → Plan → Deploy</text>
+<text x="1000" y="316" class="small" text-anchor="start">Edge and DNS API steps</text>
+<path d="M1100 342 V384" class="control" marker-end="url(#muted)"/>
+<rect x="978" y="384" width="244" height="200" rx="16" fill="white" stroke="#d6e1ef" stroke-width="1.5"/>
+<text x="1000" y="420" class="heading" text-anchor="start">ACM hub + GitOps</text>
+<text x="1000" y="452" class="small" text-anchor="start">ACM selects / registers</text>
+<text x="1000" y="476" class="small" text-anchor="start">the two managed clusters.</text>
+<text x="1000" y="516" class="small" text-anchor="start">Argo CD reconciles Git</text>
+<text x="1000" y="540" class="small" text-anchor="start">on both selected sites.</text>
+<text x="1000" y="566" class="small" text-anchor="start">Operators manage runtime.</text>
+<rect x="978" y="622" width="244" height="214" rx="16" fill="white" stroke="#d6e1ef" stroke-width="1.5"/>
+<text x="1000" y="660" class="heading" text-anchor="start">Vault integrations</text>
+<text x="1000" y="696" class="body" text-anchor="start">cert-manager → TLS</text>
+<text x="1000" y="726" class="body" text-anchor="start">ESO → local Secrets</text>
+<text x="1000" y="766" class="small" text-anchor="start">AAP imports the edge</text>
+<text x="1000" y="790" class="small" text-anchor="start">certificate from a site’s</text>
+<text x="1000" y="814" class="small" text-anchor="start">cert-manager TLS Secret.</text>
+<text x="1000" y="884" class="small" text-anchor="start">Existing integrations reused.</text>
+<text x="1000" y="914" class="small" text-anchor="start">Hub: dual stack.</text>
+<text x="1000" y="944" class="small" text-anchor="start">Managed sites: IPv6 only.</text>
+<text x="1000" y="989" class="small" text-anchor="start">Outside the login traffic path.</text>
+<path d="M42 1062 H87" class="line" marker-end="url(#arrow)"/>
+<text x="100" y="1068" class="small" text-anchor="start">Application traffic</text>
+<path d="M300 1062 H345" class="control" marker-end="url(#muted)"/>
+<text x="358" y="1068" class="small" text-anchor="start">DNS / orchestration</text>
+<text x="1238" y="1068" class="small" text-anchor="end">Example values only · replace before deployment.</text>
+<text x="40" y="1105" class="small" text-anchor="start">Availability also depends on database and edge redundancy. Diagram shows the target topology; see readiness for verified status.</text>
+</svg>

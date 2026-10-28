@@ -1,0 +1,33 @@
+---
+- name: Render review artifacts locally without applying them
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    repository_root: '{{ playbook_dir }}/../../..'
+    # AAP caller supplies a writable persistent artifact directory.
+    artifact_directory: ''
+    release_revision: ''
+  tasks:
+    - name: Require a commit and artifact destination
+      ansible.builtin.assert:
+        that:
+          - release_revision is match('^[0-9a-f]{40}$')
+          - artifact_directory is match('^/')
+        fail_msg: Supply a full reviewed Git commit and an absolute artifact directory.
+
+    - name: Render and validate repository artifacts
+      ansible.builtin.command:
+        argv:
+          - python3
+          - '{{ repository_root }}/scripts/render.py'
+          - --revision
+          - '{{ release_revision }}'
+          - --output
+          - '{{ artifact_directory }}'
+      register: prepared
+      changed_when: false
+
+    - name: Report artifact readiness
+      ansible.builtin.debug:
+        msg: '{{ prepared.stdout }}'

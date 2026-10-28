@@ -1,0 +1,15 @@
+---
+- name: Resolve edge node IDs
+  ansible.builtin.set_fact:
+    source_node_id: "{{ (workflow_nodes.json.results | selectattr('identifier', 'equalto', graph_edge.source) | first).id }}"
+    target_node_id: "{{ (workflow_nodes.json.results | selectattr('identifier', 'equalto', graph_edge.target) | first).id }}"
+
+- name: Associate the success edge
+  ansible.builtin.uri:
+    url: '{{ controller_api_base }}/workflow_job_template_nodes/{{ source_node_id }}/success_nodes/'
+    method: POST
+    headers: {Authorization: "Bearer {{ lookup('ansible.builtin.env', 'CONTROLLER_OAUTH_TOKEN') }}"}
+    body_format: json
+    body: "{{ {'id': target_node_id | int} | to_json }}"
+    status_code: [200, 204]
+  no_log: true

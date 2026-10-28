@@ -1,0 +1,59 @@
+# Additive read permissions for the existing AAP hub identity.
+# These do not authorize deployment or change the existing platform role.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keycloak-hub-discovery
+  labels:
+    app.kubernetes.io/managed-by: keycloak-aap
+rules:
+  - apiGroups: [""]
+    resources: [nodes]
+    verbs: [list]
+  - apiGroups: [config.openshift.io]
+    resources: [networks]
+    resourceNames: [cluster]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: keycloak-hub-discovery
+  labels:
+    app.kubernetes.io/managed-by: keycloak-aap
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: keycloak-hub-discovery
+subjects:
+  - kind: ServiceAccount
+    name: keycloak-runner
+    namespace: aap
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: keycloak-discovery-applications
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/managed-by: keycloak-aap
+rules:
+  - apiGroups: [argoproj.io]
+    resources: [applications]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: keycloak-discovery-applications
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/managed-by: keycloak-aap
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: keycloak-discovery-applications
+subjects:
+  - kind: ServiceAccount
+    name: keycloak-runner
+    namespace: aap

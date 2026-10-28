@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+patches:
+  - target:
+      kind: Keycloak
+      name: keycloak
+    patch: |-
+      - op: replace
+        path: /spec/additionalOptions/0/value
+        value: keycloak-a
+  - target:
+      kind: Service
+      name: keycloak-external
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/metallb.io~1loadBalancerIPs
+        value: REPLACE_ME_CLUSTER_A_METALLB_IPV6

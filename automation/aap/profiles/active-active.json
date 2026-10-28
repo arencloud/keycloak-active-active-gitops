@@ -1,0 +1,36 @@
+{
+  "environment": "active-active",
+  "execution_enabled": false,
+  "namespace": "keycloak",
+  "hub_namespace": "openshift-gitops",
+  "public_host": "auth.example.com",
+  "public_vip": "2001:db8:10:7::70",
+  "expected_csv": "keycloak-operator.v26.8.1",
+  "timeout_seconds": 900,
+  "sites": [
+    {
+      "name": "cluster-a",
+      "overlay": "cluster-a",
+      "backend_ipv6": "REPLACE_ME_CLUSTER_A_METALLB_IPV6",
+      "server": "https://api.cluster-a.example.com:6443"
+    },
+    {
+      "name": "cluster-b",
+      "overlay": "cluster-b",
+      "backend_ipv6": "REPLACE_ME_CLUSTER_B_METALLB_IPV6",
+      "server": "https://api.cluster-b.example.com:6443"
+    }
+  ],
+  "opnsense": {
+    "url": "https://REPLACE_ME_OPNSENSE_API_HOST",
+    "objects_file": "automation/opnsense/objects.json",
+    "configtest_success": "REPLACE_ME_EXACT_CONFIGTEST_SUCCESS_RESULT",
+    "reconfigure_success": "REPLACE_ME_EXACT_RECONFIGURE_SUCCESS_STATUS",
+    "enable_service": true
+  },
+  "cloudflare": {
+    "zone_id": "REPLACE_ME_CLOUDFLARE_ZONE_ID"
+  },
+  "smoke_client_id": "keycloak-deployment-smoke",
+  "removal_enabled": false
+}

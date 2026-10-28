@@ -1,0 +1,13 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: keycloak-operator
+  namespace: keycloak
+spec:
+  name: keycloak-operator
+  channel: fast
+  source: community-operators
+  sourceNamespace: openshift-marketplace
+  # Initial version selection, not a permanent version lock.
+  startingCSV: keycloak-operator.v26.8.1
+  installPlanApproval: Manual

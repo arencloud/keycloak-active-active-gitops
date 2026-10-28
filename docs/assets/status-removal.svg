@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="158" height="30" viewBox="0 0 158 30" role="img" aria-labelledby="title desc">
+<title id="title">Removal: verified</title><desc id="desc">Successful removal of one deployed Keycloak installation confirmed by the user on 28 October 2026. This is not a live status monitor.</desc>
+<style>text{font-family:Arial,Helvetica,sans-serif}</style>
+<defs><clipPath id="round"><rect width="158" height="30" rx="6"/></clipPath></defs><g clip-path="url(#round)"><rect width="158" height="30" fill="#26374e"/><rect x="78" width="80" height="30" fill="#167354"/></g><text x="39.0" y="20" font-size="12" fill="#ffffff" font-weight="600" text-anchor="middle">Removal</text><text x="118" y="20" font-size="12" fill="#ffffff" font-weight="600" text-anchor="middle">verified</text>
+</svg>

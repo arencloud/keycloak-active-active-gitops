@@ -1,0 +1,16 @@
+---
+# Copy OUTSIDE the repository. IDs are assigned by YOUR controller, not portable defaults.
+controller_api_base: https://aap.apps.hub.example.com/api/controller/v2
+# controller_ca_file: /injected/trusted-controller-ca.pem
+controller_organization_id: 0
+controller_project_id: 0
+controller_inventory_id: 0
+controller_execution_environment_id: 0
+controller_instance_group_ids: []
+controller_preflight_credential_ids: []
+controller_deploy_credential_ids: []
+# Keep true: registration discovers real cluster choices through the injected hub kubeconfig.
+controller_refresh_cluster_choices: true
+controller_report_directory: /runner/keycloak-recovery
+# Explicitly enable only for a reviewed registration command; this does not launch workflows.
+configure_controller: false

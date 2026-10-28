@@ -1,0 +1,23 @@
+---
+- import_playbook: configure-controller.yml
+  vars:
+    workflow_name: Keycloak Active Active Removal
+    workflow_description: Explicit removal of Keycloak, its dedicated database schema, owned HAProxy objects and DNS; separate execute RBAC required.
+    survey_file: '{{ playbook_dir }}/../controller/removal-survey.json'
+    controller_jobs:
+      - name: Keycloak Removal Preflight
+        playbook: automation/aap/playbooks/automatic-removal.yml
+        extra_vars: {plan_only: true}
+        credential_ids: '{{ controller_preflight_credential_ids }}'
+      - name: Keycloak Removal Plan
+        playbook: automation/aap/playbooks/automatic-removal.yml
+        extra_vars: {plan_only: true, workflow_operation: remove}
+        credential_ids: '{{ controller_preflight_credential_ids }}'
+      - name: Keycloak Removal Execute
+        playbook: automation/aap/playbooks/automatic-removal.yml
+        extra_vars: {plan_only: false, workflow_operation: remove, keycloak_report_directory: '{{ controller_report_directory }}'}
+        credential_ids: '{{ controller_deploy_credential_ids }}'
+    controller_nodes:
+      - {identifier: preflight, template_name: Keycloak Removal Preflight}
+      - {identifier: plan, template_name: Keycloak Removal Plan}
+      - {identifier: execute, template_name: Keycloak Removal Execute}

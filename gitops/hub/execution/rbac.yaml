@@ -1,0 +1,33 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: keycloak-release-runner
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/managed-by: keycloak-aap
+rules:
+  - apiGroups: [argoproj.io]
+    resources: [applications]
+    verbs: [get, list, watch, create, patch, delete]
+  - apiGroups: [argoproj.io]
+    resources: [appprojects]
+    verbs: [get, create, patch]
+  - apiGroups: [apps.open-cluster-management.io]
+    resources: [gitopsclusters]
+    verbs: [get, create, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: keycloak-release-runner
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/managed-by: keycloak-aap
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: keycloak-release-runner
+subjects:
+  - kind: ServiceAccount
+    name: keycloak-runner
+    namespace: aap

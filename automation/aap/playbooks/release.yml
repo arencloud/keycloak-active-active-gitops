@@ -1,0 +1,133 @@
+---
+- name: Run the reviewed Keycloak release
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    run_mode: plan
+    lifecycle: reconcile
+    request_id: ''
+    release_revision: ''
+    # Set by the dedicated plan template, not by the survey.
+    plan_only: false
+    workflow_operation: deploy
+    confirm_removal: ''
+    database_name: ''
+    deployed_revision: ''
+    backup_reference: ''
+    backup_policy: verified-backup
+    no_backup_confirmation: ''
+    haproxy_removal_action: reload
+    repository_root: '{{ playbook_dir }}/../../..'
+  tasks:
+    - name: Validate survey input
+      ansible.builtin.assert:
+        that:
+          - workflow_operation in ['deploy', 'remove']
+          - run_mode in ['plan', workflow_operation]
+          - lifecycle in ['initial-install', 'reconcile']
+          - haproxy_removal_action in ['reload', 'stop-start']
+          - backup_policy in ['verified-backup', 'no-backup']
+          - release_revision is match('^[0-9a-f]{40}$')
+          - request_id is match('^[A-Za-z0-9][A-Za-z0-9_.-]{2,79}$')
+
+    - name: Allocate an isolated release checkout
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: keycloak-aap-release-
+      register: release_directory
+
+    - name: Execute from the exact reviewed commit
+      block:
+        - name: Copy locally available Git history without network credentials
+          ansible.builtin.command:
+            argv: [git, clone, --no-hardlinks, --no-checkout, '{{ repository_root }}', '{{ release_directory.path }}/repository']
+          changed_when: false
+
+        - name: Check out the requested immutable revision
+          ansible.builtin.command:
+            argv: [git, '-C', '{{ release_directory.path }}/repository', checkout, --detach, '{{ release_revision }}']
+          changed_when: false
+
+        - name: Serialize non-secret survey configuration
+          ansible.builtin.copy:
+            dest: '{{ release_directory.path }}/parameters.json'
+            mode: '0600'
+            content: >-
+              {{ {
+                'public_host': kc_public_host,
+                'public_vip': kc_public_vip,
+                'backend_a': kc_backend_a,
+                'backend_b': kc_backend_b,
+                'proxy_cidr': kc_proxy_cidr,
+                'automation_cidr': kc_automation_cidr,
+                'admin_cidrs': kc_admin_cidrs,
+                'database_path': kc_database_path,
+                'bootstrap_path': kc_bootstrap_path,
+                'database_ca': kc_database_ca,
+                'issuer': kc_issuer,
+                'secret_store': kc_secret_store,
+                'metallb_pool': kc_metallb_pool,
+                'opnsense_url': kc_opnsense_url,
+                'backend_ca_uuid': kc_backend_ca_uuid,
+                'public_cert_uuid': kc_public_cert_uuid,
+                'configtest_success': kc_configtest_success,
+                'reconfigure_success': kc_reconfigure_success,
+                'cloudflare_zone': kc_cloudflare_zone,
+                'credential_namespace': kc_credential_namespace,
+                'credential_secret': kc_credential_secret,
+                'automation_path': kc_automation_path,
+                'opnsense_path': kc_opnsense_path,
+                'cloudflare_path': kc_cloudflare_path
+              } | to_nice_json }}
+
+        - name: Run the offline plan or the gated deployment
+          ansible.builtin.command:
+            argv:
+              - python3
+              - '{{ release_directory.path }}/repository/scripts/deploy.py'
+              - --operation
+              - '{{ workflow_operation }}'
+              - --confirm-removal
+              - '{{ confirm_removal }}'
+              - --deployed-revision
+              - '{{ deployed_revision }}'
+              - --database-name
+              - '{{ database_name }}'
+              - --backup-reference
+              - '{{ backup_reference }}'
+              - --backup-policy
+              - '{{ backup_policy }}'
+              - --no-backup-confirmation
+              - '{{ no_backup_confirmation }}'
+              - --haproxy-removal-action
+              - '{{ haproxy_removal_action }}'
+              - --parameters
+              - '{{ release_directory.path }}/parameters.json'
+              - --mode
+              - "{{ 'plan' if plan_only | bool else run_mode }}"
+              - --lifecycle
+              - '{{ lifecycle }}'
+              - --revision
+              - '{{ release_revision }}'
+              - --request-id
+              - '{{ request_id }}'
+          environment:
+            KEYCLOAK_REPORT_DIR: "{{ keycloak_report_directory | default(lookup('ansible.builtin.env', 'KEYCLOAK_REPORT_DIR'), true) }}"
+          register: release_result
+          changed_when: run_mode != 'plan' and not (plan_only | bool)
+          failed_when: false
+
+        - name: Publish only the runner's sanitized result
+          ansible.builtin.debug:
+            msg: '{{ release_result.stdout_lines }}'
+
+        - name: Fail the job when a stage failed
+          ansible.builtin.assert:
+            that: release_result.rc == 0
+            fail_msg: Release failed; use the sanitized stage report. No automatic database or namespace rollback was performed.
+      always:
+        - name: Remove the isolated release checkout
+          ansible.builtin.file:
+            path: '{{ release_directory.path }}'
+            state: absent

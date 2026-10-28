@@ -1,0 +1,25 @@
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: keycloak-sites
+spec:
+  clusterSets:
+    - default
+  numberOfClusters: 2
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchExpressions:
+            - key: name
+              operator: In
+              values:
+                - cluster-a
+                - cluster-b
+            - key: local-cluster
+              operator: DoesNotExist
+  # Preserve registration during an outage. Readiness is a separate workflow gate.
+  tolerations:
+    - key: cluster.open-cluster-management.io/unavailable
+      operator: Exists
+    - key: cluster.open-cluster-management.io/unreachable
+      operator: Exists

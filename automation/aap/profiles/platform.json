@@ -1,0 +1,21 @@
+{
+  "hub_api": "https://api.hub.example.com:6443",
+  "metallb_pool_preference": "machine-network-last-50",
+  "issuer_preference": "vault-example",
+  "secret_store_preference": "example-vault",
+  "opnsense_path": "global/opnsense",
+  "cloudflare_path": "global/cloudflare",
+  "opnsense_url": "https://router.example.com:8443",
+  "opnsense_configtest_success": "\n\n",
+  "opnsense_reconfigure_success": "ok",
+  "administrator_networks": [
+    "2001:db8:ffff:6::/64"
+  ],
+  "database_ca_configmap": "keycloak-db-rootcert",
+  "database_ca_key": "db-ca.pem",
+  "recovery_secret": "keycloak-workflow-admin",
+  "environment": "active-active",
+  "repository_url": "https://github.com/arencloud/keycloak-active-active-gitops.git",
+  "commissioning_cluster": "cluster-a",
+  "commissioning_database_host": "postgresql.example.com"
+}

@@ -1,0 +1,33 @@
+---
+- name: Resolve the node job template
+  ansible.builtin.uri:
+    url: '{{ controller_api_base }}/job_templates/?name={{ node_definition.template_name | urlencode }}&project={{ controller_project_id }}'
+    headers: {Authorization: "Bearer {{ lookup('ansible.builtin.env', 'CONTROLLER_OAUTH_TOKEN') }}"}
+  register: node_job
+  no_log: true
+
+- name: Look up the workflow node
+  ansible.builtin.uri:
+    url: '{{ controller_api_base }}/workflow_job_templates/{{ workflow_saved.json.id }}/workflow_nodes/?identifier={{ node_definition.identifier }}'
+    headers: {Authorization: "Bearer {{ lookup('ansible.builtin.env', 'CONTROLLER_OAUTH_TOKEN') }}"}
+  register: node_lookup
+  no_log: true
+
+- name: Require unique job and node identifiers
+  ansible.builtin.assert:
+    that:
+      - node_job.json.count | int == 1
+      - node_lookup.json.count | int <= 1
+
+- name: Create or update the workflow node
+  ansible.builtin.uri:
+    url: "{{ controller_api_base }}/{{ 'workflow_job_template_nodes/' + (node_lookup.json.results[0].id | string) + '/' if node_lookup.json.count | int == 1 else 'workflow_job_templates/' + (workflow_saved.json.id | string) + '/workflow_nodes/' }}"
+    method: "{{ 'PATCH' if node_lookup.json.count | int == 1 else 'POST' }}"
+    headers: {Authorization: "Bearer {{ lookup('ansible.builtin.env', 'CONTROLLER_OAUTH_TOKEN') }}"}
+    body_format: json
+    body:
+      identifier: '{{ node_definition.identifier }}'
+      unified_job_template: '{{ node_job.json.results[0].id | int }}'
+      all_parents_must_converge: true
+    status_code: [200, 201]
+  no_log: true

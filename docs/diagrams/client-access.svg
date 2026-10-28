@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1010" viewBox="0 0 1280 1010" role="img" aria-labelledby="title desc">
+<title id="title">How a browser signs in through the public Keycloak endpoint</title><desc id="desc">Authorization Code with PKCE example for a server-side web application. The browser opens the application, follows a redirect to Keycloak through the public VIP and HAProxy, authenticates, and returns a code to the application callback. The application exchanges that code and verifier for tokens over the same public endpoint and establishes its own session. Service clients use the token endpoint directly.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#2563eb"/></marker><marker id="muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#7c6aa6"/></marker></defs><style>text{font-family:Arial,Helvetica,sans-serif;fill:#182b49}.heading{font-weight:700;font-size:23px}.body{font-size:18px;fill:#475a73}.small{font-size:16px;fill:#475a73}.eyebrow{font-size:14px;letter-spacing:1.7px;font-weight:700;fill:#61748d}.white{fill:white}.line{fill:none;stroke:#2563eb;stroke-width:2.5}.control{fill:none;stroke:#7c6aa6;stroke-width:2;stroke-dasharray:6 5}</style>
+<rect width="1280" height="1010" fill="#f3f6fb"/>
+<rect x="0" y="0" width="1280" height="118" rx="0" fill="#142744" stroke="#142744" stroke-width="1.5"/>
+<text x="40" y="49" class="heading white" text-anchor="start">HOW THE CLIENT SIGNS IN</text>
+<text x="40" y="83" class="body white" text-anchor="start">Example: server-side web application · OpenID Connect Authorization Code + PKCE</text>
+<text x="1238" y="47" class="eyebrow white" text-anchor="end">CLIENT JOURNEY</text>
+<rect x="30" y="156" width="300" height="86" rx="16" fill="white" stroke="#bdcfe4" stroke-width="1.5"/>
+<text x="180" y="189" class="heading" text-anchor="middle">Browser</text>
+<text x="180" y="219" class="small" text-anchor="middle">User’s IPv6-connected device</text>
+<path d="M180 246 V854" fill="none" stroke="#bccbdd" stroke-width="2" stroke-dasharray="5 7"/>
+<rect x="490" y="156" width="300" height="86" rx="16" fill="white" stroke="#bdcfe4" stroke-width="1.5"/>
+<text x="640" y="189" class="heading" text-anchor="middle">Your application</text>
+<text x="640" y="219" class="small" text-anchor="middle">Web backend + callback</text>
+<path d="M640 246 V854" fill="none" stroke="#bccbdd" stroke-width="2" stroke-dasharray="5 7"/>
+<rect x="950" y="156" width="300" height="86" rx="16" fill="white" stroke="#bdcfe4" stroke-width="1.5"/>
+<text x="1100" y="189" class="heading" text-anchor="middle">Public Keycloak</text>
+<text x="1100" y="219" class="small" text-anchor="middle">FQDN → VIP → HAProxy</text>
+<path d="M1100 246 V854" fill="none" stroke="#bccbdd" stroke-width="2" stroke-dasharray="5 7"/>
+<text x="410.0" y="275" class="small" text-anchor="middle">1  Open a protected page</text>
+<path d="M180 290 H640" class="line" marker-end="url(#arrow)"/>
+<text x="410.0" y="345" class="small" text-anchor="middle">2  Redirect to authorization endpoint + PKCE challenge</text>
+<path d="M640 360 H180" class="control" marker-end="url(#muted)"/>
+<text x="640.0" y="415" class="small" text-anchor="middle">3  Open sign-in page and authenticate over HTTPS</text>
+<path d="M180 430 H1100" class="line" marker-end="url(#arrow)"/>
+<text x="640.0" y="495" class="small" text-anchor="middle">4  Redirect browser to the application callback with an authorization code</text>
+<path d="M1100 510 H180" class="control" marker-end="url(#muted)"/>
+<text x="410.0" y="565" class="small" text-anchor="middle">5  Follow callback with code + state</text>
+<path d="M180 580 H640" class="line" marker-end="url(#arrow)"/>
+<text x="870.0" y="635" class="small" text-anchor="middle">6  Exchange code + PKCE verifier at /token</text>
+<path d="M640 650 H1100" class="line" marker-end="url(#arrow)"/>
+<text x="870.0" y="705" class="small" text-anchor="middle">7  Return ID token + access token</text>
+<path d="M1100 720 H640" class="control" marker-end="url(#muted)"/>
+<text x="410.0" y="775" class="small" text-anchor="middle">8  Establish app session; return protected page</text>
+<path d="M640 790 H180" class="control" marker-end="url(#muted)"/>
+<rect x="40" y="869" width="1200" height="103" rx="16" fill="#e9f2ff" stroke="#bdcfe4" stroke-width="1.5"/>
+<text x="64" y="902" class="heading" text-anchor="start">One issuer across both sites</text>
+<text x="64" y="930" class="body" text-anchor="start">Every Keycloak HTTPS request uses the public FQDN; HAProxy chooses a healthy cluster. DNS supplies only the VIP.</text>
+<text x="64" y="956" class="small" text-anchor="start">Service clients call /token directly. Application/API traffic follows the application’s own route, not the Keycloak endpoint.</text>
+</svg>

@@ -1,0 +1,83 @@
+{
+  "name": "Remove Active/Active Keycloak",
+  "description": "Targets and owned resources come from the hub deployment record. Vault and shared applications are preserved.",
+  "spec": [
+    {
+      "question_name": "Deployment namespace",
+      "question_description": "Selects the deployment record; clusters, database reference and public endpoint are read from that record.",
+      "variable": "kc_namespace",
+      "type": "text",
+      "min": 1,
+      "max": 63,
+      "default": "keycloak",
+      "required": true
+    },
+    {
+      "question_name": "Action",
+      "question_description": "Remove requires an enabled Git profile, exact hostname/database confirmations and the selected backup policy.",
+      "variable": "run_mode",
+      "type": "multiplechoice",
+      "choices": "plan\nremove",
+      "default": "plan",
+      "required": true
+    },
+    {
+      "question_name": "HAProxy service action during removal",
+      "question_description": "Reload by default. Select stop-start when a temporary shared-service interruption is needed; restart and running-state verification are required before continuing. An already stopped/disabled service stays unchanged.",
+      "variable": "haproxy_removal_action",
+      "type": "multiplechoice",
+      "choices": "reload\nstop-start",
+      "default": "reload",
+      "required": true
+    },
+    {
+      "question_name": "Removal confirmation",
+      "variable": "confirm_removal",
+      "type": "text",
+      "min": 1,
+      "max": 260,
+      "default": "",
+      "required": true,
+      "question_description": "Enter REMOVE followed by a space and the exact public hostname."
+    },
+    {
+      "question_name": "Dedicated database name",
+      "variable": "database_name",
+      "type": "text",
+      "min": 1,
+      "max": 253,
+      "default": "",
+      "required": true,
+      "question_description": "Must match both ESO database secrets. Confirms this database is exclusively for this Keycloak deployment."
+    },
+    {
+      "question_name": "Backup policy",
+      "variable": "backup_policy",
+      "type": "multiplechoice",
+      "choices": "verified-backup\nno-backup",
+      "default": "verified-backup",
+      "required": true,
+      "question_description": "verified-backup requires a backup reference. no-backup permanently discards Keycloak database contents and requires the separate data-loss confirmation."
+    },
+    {
+      "question_name": "Verified backup reference",
+      "variable": "backup_reference",
+      "type": "text",
+      "min": 0,
+      "max": 253,
+      "default": "",
+      "required": false,
+      "question_description": "Required for verified-backup. Supply an independently checked backup ID or restore-point reference. Leave empty for no-backup. The workflow does not create or validate backups."
+    },
+    {
+      "question_name": "Permanent data-loss confirmation (no backup)",
+      "variable": "no_backup_confirmation",
+      "type": "text",
+      "min": 0,
+      "max": 300,
+      "default": "",
+      "required": false,
+      "question_description": "For no-backup, enter DELETE <database-name> WITHOUT BACKUP using the exact Dedicated database name. Example: DELETE keycloak_db WITHOUT BACKUP. Leave empty for verified-backup."
+    }
+  ]
+}

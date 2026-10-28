@@ -1,0 +1,43 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: keycloak-ee
+  namespace: aap
+  labels:
+    app.kubernetes.io/managed-by: keycloak-aap
+spec:
+  runPolicy: Serial
+  successfulBuildsHistoryLimit: 3
+  failedBuildsHistoryLimit: 3
+  source:
+    type: Binary
+    binary: {}
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Containerfile
+      buildArgs:
+        - name: BASE_EE_IMAGE
+          value: REPLACE_ME_APPROVED_BASE_EE_IMAGE_AT_DIGEST
+  output:
+    to:
+      kind: ImageStreamTag
+      name: keycloak-ee:1.0.0
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+  triggers: []
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: keycloak-ee
+  namespace: aap
+  labels:
+    app.kubernetes.io/managed-by: keycloak-aap
+spec:
+  lookupPolicy:
+    local: false

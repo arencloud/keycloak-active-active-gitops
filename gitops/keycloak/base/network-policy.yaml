@@ -1,0 +1,33 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: keycloak-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app: keycloak
+      app.kubernetes.io/instance: keycloak
+      app.kubernetes.io/managed-by: keycloak-operator
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: REPLACE_ME_OBSERVED_PROXY_IPV6_CIDR
+        - ipBlock:
+            cidr: REPLACE_ME_AUTOMATION_IPV6_CIDR
+      ports:
+        - {protocol: TCP, port: 8443}
+    # Namespace-local operator probes and embedded-cache traffic.
+    - from:
+        - podSelector: {}
+      ports:
+        - {protocol: TCP, port: 8443}
+        - {protocol: TCP, port: 9000}
+        - {protocol: TCP, port: 7800}
+        - {protocol: TCP, port: 57800}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-monitoring
+      ports:
+        - {protocol: TCP, port: 9000}

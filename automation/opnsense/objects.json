@@ -1,0 +1,88 @@
+{
+  "reviewed": false,
+  "objects": [
+    {
+      "type": "healthcheck",
+      "name": "keycloak-site-health",
+      "fields": {
+        "type": "http",
+        "interval": "3s",
+        "ssl": "sslsni",
+        "sslSNI": "REPLACE_ME_PUBLIC_FQDN",
+        "http_method": "get",
+        "http_uri": "/lb-check",
+        "http_version": "http11",
+        "http_host": "REPLACE_ME_PUBLIC_FQDN",
+        "http_expressionEnabled": "1",
+        "http_expression": "status",
+        "http_value": "200"
+      }
+    },
+    {
+      "type": "server",
+      "name": "keycloak-site-a",
+      "fields": {
+        "enabled": "1",
+        "type": "static",
+        "address": "REPLACE_ME_CLUSTER_A_METALLB_IPV6",
+        "port": "443",
+        "mode": "active",
+        "ssl": "1",
+        "sslVerify": "1",
+        "sslCA": "REPLACE_ME_OPNSENSE_BACKEND_CA_UUID",
+        "sslSNI": "REPLACE_ME_PUBLIC_FQDN",
+        "advanced": "verifyhost REPLACE_ME_PUBLIC_FQDN"
+      }
+    },
+    {
+      "type": "server",
+      "name": "keycloak-site-b",
+      "fields": {
+        "enabled": "1",
+        "type": "static",
+        "address": "REPLACE_ME_CLUSTER_B_METALLB_IPV6",
+        "port": "443",
+        "mode": "active",
+        "ssl": "1",
+        "sslVerify": "1",
+        "sslCA": "REPLACE_ME_OPNSENSE_BACKEND_CA_UUID",
+        "sslSNI": "REPLACE_ME_PUBLIC_FQDN",
+        "advanced": "verifyhost REPLACE_ME_PUBLIC_FQDN"
+      }
+    },
+    {
+      "type": "backend",
+      "name": "keycloak-active-active",
+      "fields": {
+        "enabled": "1",
+        "mode": "http",
+        "algorithm": "roundrobin",
+        "linkedServers": [
+          "@server/keycloak-site-a",
+          "@server/keycloak-site-b"
+        ],
+        "healthCheckEnabled": "1",
+        "healthCheck": "@healthcheck/keycloak-site-health",
+        "healthCheckFall": "3",
+        "healthCheckRise": "2",
+        "tuning_timeoutConnect": "5s",
+        "tuning_timeoutServer": "60s"
+      }
+    },
+    {
+      "type": "frontend",
+      "name": "keycloak-public",
+      "fields": {
+        "enabled": "1",
+        "bind": "[REPLACE_ME_PUBLIC_IPV6]:443",
+        "mode": "http",
+        "defaultBackend": "@backend/keycloak-active-active",
+        "ssl_enabled": "1",
+        "ssl_certificates": "REPLACE_ME_OPNSENSE_PUBLIC_CERT_UUID",
+        "ssl_default_certificate": "REPLACE_ME_OPNSENSE_PUBLIC_CERT_UUID",
+        "customOptions": "acl kc_host hdr(host) -i REPLACE_ME_PUBLIC_FQDN REPLACE_ME_PUBLIC_FQDN:443\nhttp-request deny unless kc_host\nacl kc_admin_path path_beg -i /admin\nacl kc_admin_source src REPLACE_ME_ADMIN_IPV6_CIDRS\nhttp-request deny if kc_admin_path !kc_admin_source\nacl kc_internal path_beg -i /lb-check /health /metrics\nhttp-request deny if kc_internal\nhttp-request del-header Forwarded\nhttp-request del-header X-Forwarded-For\nhttp-request del-header X-Forwarded-Host\nhttp-request del-header X-Forwarded-Port\nhttp-request del-header X-Forwarded-Proto\nhttp-request del-header X-Forwarded-Prefix\nhttp-request set-header X-Forwarded-For %[src]\nhttp-request set-header X-Forwarded-Proto https\nhttp-request set-header X-Forwarded-Host REPLACE_ME_PUBLIC_FQDN\nhttp-request set-header X-Forwarded-Port 443"
+      }
+    }
+  ],
+  "instructions": "Commissioned on OPNsense 26.7.7 / os-haproxy 5.1 on 2026-10-27: scoped certificate, VIP, firewall, object creation, invalid-config rejection, reload and idempotent reconcile. Exact success responses are in the automatic platform profile. IPv6 server source uses a trailing empty-port colon. Temporary test objects were removed and original settings restored. Revalidate after plugin upgrades."
+}

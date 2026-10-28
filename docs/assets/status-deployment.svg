@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="178" height="30" viewBox="0 0 178 30" role="img" aria-labelledby="title desc">
+<title id="title">Deployment: verified</title><desc id="desc">Recorded status as of 28 October 2026; see the readiness report. This is not a live status monitor.</desc>
+<style>text{font-family:Arial,Helvetica,sans-serif}</style>
+<defs><clipPath id="round"><rect width="178" height="30" rx="6"/></clipPath></defs><g clip-path="url(#round)"><rect width="178" height="30" fill="#26374e"/><rect x="98" width="80" height="30" fill="#167354"/></g><text x="49.0" y="20" font-size="12" fill="#ffffff" font-weight="600" text-anchor="middle">Deployment</text><text x="138.0" y="20" font-size="12" fill="#ffffff" font-weight="600" text-anchor="middle">verified</text>
+</svg>

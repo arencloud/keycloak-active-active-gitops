@@ -1,0 +1,93 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak-operator-cluster-a
+  namespace: openshift-gitops
+spec:
+  project: keycloak-active-active
+  source:
+    repoURL: https://github.com/arencloud/keycloak-active-active-gitops.git
+    targetRevision: REPLACE_ME_REVIEWED_REVISION
+    path: gitops/operator
+  destination:
+    server: https://api.cluster-a.example.com:6443
+    namespace: keycloak
+  # Manual sync only; operator readiness must precede workload sync.
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak-keycloak-cluster-a
+  namespace: openshift-gitops
+spec:
+  project: keycloak-active-active
+  source:
+    repoURL: https://github.com/arencloud/keycloak-active-active-gitops.git
+    targetRevision: REPLACE_ME_REVIEWED_REVISION
+    path: gitops/keycloak/overlays/cluster-a
+  destination:
+    server: https://api.cluster-a.example.com:6443
+    namespace: keycloak
+  # Manual sync only; operator readiness must precede workload sync.
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak-operator-cluster-b
+  namespace: openshift-gitops
+spec:
+  project: keycloak-active-active
+  source:
+    repoURL: https://github.com/arencloud/keycloak-active-active-gitops.git
+    targetRevision: REPLACE_ME_REVIEWED_REVISION
+    path: gitops/operator
+  destination:
+    server: https://api.cluster-b.example.com:6443
+    namespace: keycloak
+  # Manual sync only; operator readiness must precede workload sync.
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak-keycloak-cluster-b
+  namespace: openshift-gitops
+spec:
+  project: keycloak-active-active
+  source:
+    repoURL: https://github.com/arencloud/keycloak-active-active-gitops.git
+    targetRevision: REPLACE_ME_REVIEWED_REVISION
+    path: gitops/keycloak/overlays/cluster-b
+  destination:
+    server: https://api.cluster-b.example.com:6443
+    namespace: keycloak
+  # Manual sync only; operator readiness must precede workload sync.
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak-prerequisites-cluster-a
+  namespace: openshift-gitops
+spec:
+  project: keycloak-active-active
+  source:
+    repoURL: https://github.com/arencloud/keycloak-active-active-gitops.git
+    targetRevision: REPLACE_ME_REVIEWED_REVISION
+    path: gitops/keycloak/prerequisites
+  destination:
+    server: https://api.cluster-a.example.com:6443
+    namespace: keycloak
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak-prerequisites-cluster-b
+  namespace: openshift-gitops
+spec:
+  project: keycloak-active-active
+  source:
+    repoURL: https://github.com/arencloud/keycloak-active-active-gitops.git
+    targetRevision: REPLACE_ME_REVIEWED_REVISION
+    path: gitops/keycloak/prerequisites
+  destination:
+    server: https://api.cluster-b.example.com:6443
+    namespace: keycloak

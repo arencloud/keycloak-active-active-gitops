@@ -1,0 +1,20 @@
+---
+# Non-secret inputs verified by the hub audit. Credentials are injected by AAP.
+hub_api: https://api.hub.example.com:6443
+argo_namespace: openshift-gitops
+argo_instance: openshift-gitops
+acm_namespace: open-cluster-management
+acm_instance: multiclusterhub
+placement_name: keycloak-sites
+cluster_set: default
+expected_clusters:
+  - cluster-a
+  - cluster-b
+site_mapping:
+  cluster-a:
+    overlay: cluster-a
+    server: https://api.cluster-a.example.com:6443
+  cluster-b:
+    overlay: cluster-b
+    server: https://api.cluster-b.example.com:6443
+repository_url: https://github.com/arencloud/keycloak-active-active-gitops.git

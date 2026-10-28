@@ -1,0 +1,62 @@
+---
+- name: Plan or remove the recorded Keycloak deployment
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    run_mode: plan
+    plan_only: true
+    confirm_removal: ''
+    database_name: ''
+    backup_reference: ''
+    backup_policy: verified-backup
+    no_backup_confirmation: ''
+    haproxy_removal_action: reload
+  tasks:
+    - name: Validate removal mode
+      ansible.builtin.assert:
+        that:
+          - kc_namespace | length > 0
+          - run_mode in ['plan', 'remove']
+          - haproxy_removal_action in ['reload', 'stop-start']
+          - backup_policy in ['verified-backup', 'no-backup']
+
+    - name: Read the deployment record or run gated removal
+      ansible.builtin.command:
+        argv:
+          - python3
+          - '{{ playbook_dir }}/../../../scripts/automatic_remove.py'
+          - --namespace
+          - '{{ kc_namespace }}'
+          - --mode
+          - "{{ 'plan' if plan_only | bool else run_mode }}"
+          - --confirm-removal
+          - '{{ confirm_removal }}'
+          - --database-name
+          - '{{ database_name }}'
+          - --backup-reference
+          - '{{ backup_reference }}'
+          - --backup-policy
+          - '{{ backup_policy }}'
+          - --no-backup-confirmation
+          - '{{ no_backup_confirmation }}'
+          - --haproxy-removal-action
+          - '{{ haproxy_removal_action }}'
+          - --request-id
+          - "AAP-{{ awx_workflow_job_id | default(awx_job_id | default(tower_job_id | default('manual'))) }}"
+      environment:
+        KEYCLOAK_REPORT_DIR: "{{ keycloak_report_directory | default(lookup('ansible.builtin.env', 'KEYCLOAK_REPORT_DIR'), true) }}"
+      register: removal_result
+      changed_when: run_mode == 'remove' and not (plan_only | bool) and removal_result.rc == 0
+      failed_when: false
+
+    - name: Publish sanitized removal results
+      ansible.builtin.debug:
+        msg: '{{ removal_result.stdout_lines }}'
+
+    - name: Require successful execution
+      ansible.builtin.assert:
+        that: removal_result.rc == 0
+        fail_msg: >-
+          Removal failed (exit {{ removal_result.rc }}).
+          {{ removal_result.stdout | default('No runner output; inspect the execution environment.', true) }}

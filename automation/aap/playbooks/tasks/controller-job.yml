@@ -1,0 +1,91 @@
+---
+- name: Look up the named job template in the selected project
+  ansible.builtin.uri:
+    url: '{{ controller_api_base }}/job_templates/?name={{ job_definition.name | urlencode }}&project={{ controller_project_id }}'
+    headers: {Authorization: "Bearer {{ lookup('ansible.builtin.env', 'CONTROLLER_OAUTH_TOKEN') }}"}
+  register: job_lookup
+  no_log: true
+
+- name: Require an unambiguous job template
+  ansible.builtin.assert:
+    that: job_lookup.json.count | int <= 1
+
+- name: Create or update the job template
+  ansible.builtin.uri:
+    url: "{{ controller_api_base }}/job_templates/{{ (job_lookup.json.results[0].id | string + '/') if job_lookup.json.count | int == 1 else '' }}"
+    method: "{{ 'PATCH' if job_lookup.json.count | int == 1 else 'POST' }}"
+    headers: {Authorization: "Bearer {{ lookup('ansible.builtin.env', 'CONTROLLER_OAUTH_TOKEN') }}"}
+    body_format: json
+    body:
+      name: '{{ job_definition.name }}'
+      job_type: run
+      project: '{{ controller_project_id | int }}'
+      inventory: '{{ controller_inventory_id | int }}'
+      execution_environment: '{{ controller_execution_environment_id | int }}'
+      playbook: '{{ job_definition.playbook }}'
+      extra_vars: '{{ job_definition.extra_vars | to_json }}'
+      ask_variables_on_launch: false
+      allow_simultaneous: false
+      verbosity: 0
+      prevent_instance_group_fallback: '{{ true if controller_instance_group_ids | default([]) | length > 0 else omit }}'
+    status_code: [200, 201]
+  register: job_saved
+  no_log: true
+
+- name: Restrict Keycloak jobs to their configured execution groups
+  when: controller_instance_group_ids | default([]) | length > 0
+  block:
+    - name: Inspect existing job execution groups
+      ansible.builtin.uri:
+        url: '{{ controller_api_base }}/job_templates/{{ job_saved.json.id }}/instance_groups/'
+        headers: {Authorization: "Bearer {{ lookup('ansible.builtin.env', 'CONTROLLER_OAUTH_TOKEN') }}"}
+      register: job_groups
+      no_log: true
+
+    - name: Require expected execution groups
+      ansible.builtin.assert:
+        that:
+          - job_groups.json.next == None
+          - job_groups.json.results | map(attribute='id') | difference(controller_instance_group_ids | map('int') | list) | length == 0
+
+    - name: Associate the dedicated execution groups
+      ansible.builtin.uri:
+        url: '{{ controller_api_base }}/job_templates/{{ job_saved.json.id }}/instance_groups/'
+        method: POST
+        headers: {Authorization: "Bearer {{ lookup('ansible.builtin.env', 'CONTROLLER_OAUTH_TOKEN') }}"}
+        body_format: json
+        body: "{{ {'id': execution_group_id | int} | to_json }}"
+        status_code: [200, 204]
+      loop: '{{ controller_instance_group_ids }}'
+      loop_control:
+        loop_var: execution_group_id
+      when: execution_group_id | int not in (job_groups.json.results | map(attribute='id') | list)
+      no_log: true
+
+- name: Inspect existing job credentials
+  ansible.builtin.uri:
+    url: '{{ controller_api_base }}/job_templates/{{ job_saved.json.id }}/credentials/?page_size=100'
+    headers: {Authorization: "Bearer {{ lookup('ansible.builtin.env', 'CONTROLLER_OAUTH_TOKEN') }}"}
+  register: job_credentials
+  no_log: true
+
+- name: Reject unexpected credentials on an existing template
+  ansible.builtin.assert:
+    that:
+      - job_credentials.json.next == None
+      - job_credentials.json.results | map(attribute='id') | difference(job_definition.credential_ids | map('int') | list) | length == 0
+    fail_msg: Review unexpected credentials on this existing job template before continuing.
+
+- name: Associate the reviewed credentials
+  ansible.builtin.uri:
+    url: '{{ controller_api_base }}/job_templates/{{ job_saved.json.id }}/credentials/'
+    method: POST
+    headers: {Authorization: "Bearer {{ lookup('ansible.builtin.env', 'CONTROLLER_OAUTH_TOKEN') }}"}
+    body_format: json
+    body: "{{ {'id': credential_id | int} | to_json }}"
+    status_code: [200, 204]
+  loop: '{{ job_definition.credential_ids }}'
+  loop_control:
+    loop_var: credential_id
+  when: credential_id | int not in (job_credentials.json.results | map(attribute='id') | list)
+  no_log: true

@@ -1,0 +1,15 @@
+# Supply an approved RHEL-based AAP execution image with required tools and CA trust.
+ARG BASE_EE_IMAGE
+FROM ${BASE_EE_IMAGE}
+USER 0
+RUN if command -v microdnf >/dev/null 2>&1; then \
+        microdnf install -y postgresql && microdnf clean all; \
+    else \
+        dnf install -y postgresql && dnf clean all; \
+    fi \
+    && psql --version \
+    && command -v oc \
+    && command -v kubectl \
+    && command -v ansible-runner \
+    && python3 -c 'import yaml'
+USER 1000

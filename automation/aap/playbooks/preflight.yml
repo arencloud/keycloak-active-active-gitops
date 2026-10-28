@@ -1,0 +1,99 @@
+---
+- name: Inspect the ACM hub without changing resources
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../vars/environment.yml
+  vars:
+    # Set true after hub registration to enable its additional readiness checks.
+    require_registration: false
+  tasks:
+    - name: Require an explicitly injected isolated kubeconfig
+      ansible.builtin.assert:
+        that:
+          - lookup('ansible.builtin.env', 'KUBECONFIG') | length > 0
+        fail_msg: Inject a hub kubeconfig through an AAP credential; do not use a personal default context.
+
+    - name: Verify the configured API destination without reading credential data
+      ansible.builtin.command:
+        argv: [oc, config, view, --minify, '-o', 'jsonpath={.clusters[0].cluster.server}']
+      register: hub_destination
+      changed_when: false
+
+    - name: Require the expected hub API
+      ansible.builtin.assert:
+        that: hub_destination.stdout == hub_api
+
+    - name: Read hub integration components
+      ansible.builtin.command:
+        argv: "{{ ['oc', '--request-timeout=30s', 'get'] + item.args + ['-o', 'json'] }}"
+      loop:
+        - name: acm
+          args: [multiclusterhubs.operator.open-cluster-management.io, multiclusterhub, '-n', open-cluster-management]
+        - name: argo
+          args: [argocds.argoproj.io, openshift-gitops, '-n', openshift-gitops]
+      register: hub_components
+      changed_when: false
+
+    - name: Require ACM and Argo CD readiness
+      ansible.builtin.assert:
+        that:
+          - (hub_components.results[0].stdout | from_json).status.phase == 'Running'
+          - (hub_components.results[1].stdout | from_json).status.phase == 'Available'
+
+    - name: Read the approved managed-cluster pair
+      ansible.builtin.command:
+        argv: [oc, '--request-timeout=30s', get, managedclusters.cluster.open-cluster-management.io, '{{ item }}', '-o', json]
+      loop: '{{ expected_clusters }}'
+      register: managed_clusters
+      changed_when: false
+
+    - name: Require joined and available sites in the approved cluster set
+      ansible.builtin.assert:
+        that:
+          - cluster.metadata.name == item.item
+          - cluster.metadata.labels['cluster.open-cluster-management.io/clusterset'] == cluster_set
+          - "cluster.status.conditions | selectattr('type', 'equalto', 'ManagedClusterJoined') | selectattr('status', 'equalto', 'True') | list | length == 1"
+          - "cluster.status.conditions | selectattr('type', 'equalto', 'ManagedClusterConditionAvailable') | selectattr('status', 'equalto', 'True') | list | length == 1"
+          - "cluster.status.conditions | selectattr('type', 'equalto', 'ManagedClusterConditionClockSynced') | selectattr('status', 'equalto', 'True') | list | length == 1"
+        fail_msg: A target site is not ready; do not advance deployment.
+      vars:
+        cluster: '{{ item.stdout | from_json }}'
+      loop: '{{ managed_clusters.results }}'
+      loop_control:
+        label: '{{ item.item }}'
+
+    - name: Read placement decisions after registration
+      ansible.builtin.command:
+        argv: [oc, '--request-timeout=30s', get, placementdecisions.cluster.open-cluster-management.io, '-n', '{{ argo_namespace }}', '-l', 'cluster.open-cluster-management.io/placement={{ placement_name }}', '-o', json]
+      register: decisions
+      changed_when: false
+      when: require_registration | bool
+
+    - name: Require exactly the approved identities in placement decisions
+      ansible.builtin.assert:
+        that:
+          - selected_clusters | sort == expected_clusters | sort
+      vars:
+        selected_clusters: "{{ (decisions.stdout | from_json)['items'] | map(attribute='status.decisions') | flatten | map(attribute='clusterName') | list }}"
+      when: require_registration | bool
+
+    - name: Inspect registration endpoints without outputting credential fields
+      ansible.builtin.command:
+        argv: [oc, '--request-timeout=30s', get, secrets, '-n', '{{ argo_namespace }}', '-l', 'argocd.argoproj.io/secret-type=cluster', '-o', 'jsonpath={range .items[*]}{.data.server}{"\n"}{end}']
+      register: registration_servers
+      changed_when: false
+      when: require_registration | bool
+
+    - name: Require both API endpoints registered with Argo CD
+      ansible.builtin.assert:
+        that:
+          - site_mapping[item].server | b64encode in registration_servers.stdout_lines
+        fail_msg: An expected cluster endpoint is not registered with Argo CD.
+      loop: '{{ expected_clusters }}'
+      when: require_registration | bool
+
+    - name: Report this bounded preflight result
+      ansible.builtin.debug:
+        msg: 'ACM/Argo readiness and managed-cluster identity checks passed. Registration checked={{ require_registration | bool }}. This does not validate database, Vault paths, backend IP allocation, or end-to-end application readiness.'

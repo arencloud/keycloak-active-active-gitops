@@ -1,0 +1,8 @@
+{
+  "type": "AAAA",
+  "name": "REPLACE_ME_PUBLIC_FQDN",
+  "content": "REPLACE_ME_PUBLIC_IPV6",
+  "ttl": 300,
+  "proxied": false,
+  "comment": "Active/active Keycloak OPNsense VIP"
+}

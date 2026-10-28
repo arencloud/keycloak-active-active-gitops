@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: aap
+spec:
+  serviceAccountName: default
+  automountServiceAccountToken: false
+  restartPolicy: Never
+  containers:
+    - name: worker
+      image: REPLACE_ME_KEYCLOAK_EE_IMAGE_AT_DIGEST
+      args: [ansible-runner, worker, --private-data-dir=/runner]
+      resources:
+        requests:
+          cpu: 250m
+          memory: 256Mi
+      volumeMounts:
+        - name: keycloak-recovery
+          mountPath: /runner/keycloak-recovery
+  volumes:
+    - name: keycloak-recovery
+      persistentVolumeClaim:
+        claimName: keycloak-recovery

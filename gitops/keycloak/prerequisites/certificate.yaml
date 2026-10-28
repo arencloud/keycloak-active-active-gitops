@@ -1,0 +1,19 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: keycloak-tls
+spec:
+  secretName: keycloak-tls
+  # The existing Vault example-domains role requires a CN and an EC P-256 key.
+  commonName: REPLACE_ME_PUBLIC_FQDN
+  dnsNames:
+    - REPLACE_ME_PUBLIC_FQDN
+  issuerRef:
+    name: REPLACE_ME_CLUSTER_ISSUER
+    kind: ClusterIssuer
+    group: cert-manager.io
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    encoding: PKCS8
+    rotationPolicy: Always

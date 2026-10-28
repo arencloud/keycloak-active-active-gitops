@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# Workstation/editor state and private deployment inputs
+.idea/
+.vscode/
+.DS_Store
+.local/
+.env
+.env.*
+*.local.json
+*.local.yml
+*.local.yaml
+*kubeconfig*
+*.key
+*.p12
+*.pfx
+artifacts/
+reports/
